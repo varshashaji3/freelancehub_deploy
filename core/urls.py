@@ -2,7 +2,14 @@ from django.contrib import admin
 from django.shortcuts import render
 from django.urls import include, path
 
-from core.views import  initiate_payment,resend_verification_email,resend_password_link,payment_success, update_cancellation_status,request_cancellation,check_email,about, add_user_type, contact, email_verification, index, login, login_view, logout, register, register_view, reset_password, send_forget_password_mail, send_verification_mail, service,faqs, site_review, subscription_payment_success
+from .views import (
+    initiate_payment, resend_verification_email, resend_password_link,
+    payment_success, update_cancellation_status, request_cancellation,
+    check_email, about, add_user_type, contact, email_verification, index,
+    login, login_view, logout, register, register_view, reset_password,
+    send_forget_password_mail, send_verification_mail, service, faqs,
+    site_review, subscription_payment_success
+)
 
 
 urlpatterns = [

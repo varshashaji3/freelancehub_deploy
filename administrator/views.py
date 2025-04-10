@@ -1008,7 +1008,7 @@ def get_subscriber_details(request, subscriber_id):
     if not request.user.is_staff:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
-    subscription = get_object_or_404(Subscription, id=subscriber_id)
+    subscription = get_object_or_404(SubscriptionPlan, id=subscriber_id)
     user = subscription.user
     # Get user details from Register model
     register = Register.objects.get(user=user)
@@ -1033,7 +1033,7 @@ def cancel_subscription(request, subscriber_id):
     if not request.user.is_staff or request.method != 'POST':
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
-    subscription = get_object_or_404(Subscription, id=subscriber_id)
+    subscription = get_object_or_404(SubscriptionPlan, id=subscriber_id)
     
     # Set end date to current date
     subscription.end_date = timezone.now()
