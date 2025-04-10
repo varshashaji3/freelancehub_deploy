@@ -1,0 +1,518 @@
+{% extends 'client/base.html' %}
+{% block 'client_content' %}
+{% load static %}
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+<!-- Add SweetAlert2 CDN in the head section or after jQuery -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // Define updateAnchorText function first so it's available globally
+    function updateAnchorText(list) {
+        var anchor = list.querySelector('.anchor');
+        var checkboxes = list.querySelectorAll('input[type="checkbox"]:checked');
+        var defaultText = anchor.getAttribute('data-default') || anchor.textContent;
+        
+        if (checkboxes.length > 0) {
+            if (checkboxes.length <= 2) {
+                var selectedItems = Array.from(checkboxes).map(cb => cb.value).join(', ');
+                anchor.textContent = selectedItems;
+            } else {
+                anchor.textContent = checkboxes.length + ' items selected';
+            }
+        } else {
+            anchor.textContent = defaultText;
+        }
+    }
+
+    // Define fetchFilteredResults function
+    function fetchFilteredResults() {
+        const formData = new FormData(document.getElementById('filterForm'));
+        const searchParams = new URLSearchParams(formData);
+
+        const resultsRow = document.querySelector('.row:not(.mb-4)');
+        resultsRow.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div></div>';
+
+        fetch(`${window.location.pathname}?${searchParams.toString()}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newResults = doc.querySelector('.row:not(.mb-4)');
+            resultsRow.outerHTML = newResults.outerHTML;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsRow.innerHTML = '<div class="col-12 text-center text-danger">Error loading results</div>';
+        });
+
+        const url = `${window.location.pathname}?${searchParams.toString()}`;
+        window.history.pushState({}, '', url);
+    }
+
+    // Main initialization code
+    document.addEventListener('DOMContentLoaded', function() {
+        var checkList = document.querySelectorAll('.dropdown-check-list');
+        
+        // Add dropdown initialization code
+        checkList.forEach(function(list) {
+            var anchor = list.querySelector('.anchor');
+            var items = list.querySelector('.items');
+            
+            // Set default text if provided
+            if (anchor.getAttribute('data-default')) {
+                anchor.textContent = anchor.getAttribute('data-default');
+            }
+            
+            // Toggle dropdown on click
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (list.classList.contains('visible')) {
+                    list.classList.remove('visible');
+                } else {
+                    // Close other dropdowns
+                    checkList.forEach(l => l.classList.remove('visible'));
+                    list.classList.add('visible');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!list.contains(e.target)) {
+                    list.classList.remove('visible');
+                }
+            });
+        });
+
+        // Modify checkbox change event
+        var checkboxes = document.querySelectorAll('.dropdown-check-list input[type="checkbox"]');
+        checkboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                updateAnchorText(checkbox.closest('.dropdown-check-list'));
+                fetchFilteredResults();  // This will trigger the filter immediately on checkbox change
+            });
+        });
+
+        // Add search input event listener
+        document.getElementById('searchInput').addEventListener('input', function() {
+            clearTimeout(window.submitTimeout);
+            window.submitTimeout = setTimeout(fetchFilteredResults, 500);
+        });
+
+        // Remove the duplicate clear filters event listeners and consolidate into one
+        document.getElementById('clearFilters').addEventListener('click', function() {
+            // Simply reload the page with the base URL
+            window.location.href = window.location.pathname;
+        });
+
+        // Modify checkbox change event for profession filters
+        var professionCheckboxes = document.querySelectorAll('.dropdown-check-list input[name="profession"]');
+        professionCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                updateAnchorText(checkbox.closest('.dropdown-check-list'));
+                filterFreelancers();
+            });
+        });
+
+        // Add skill checkbox event listeners
+        var skillCheckboxes = document.querySelectorAll('.dropdown-check-list input[name="skill"]');
+        skillCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                updateAnchorText(checkbox.closest('.dropdown-check-list'));
+                filterFreelancers();
+            });
+        });
+
+        function filterFreelancers() {
+            const selectedProfessions = Array.from(document.querySelectorAll('input[name="profession"]:checked'))
+                .map(cb => cb.value);
+            const selectedSkills = Array.from(document.querySelectorAll('input[name="skill"]:checked'))
+                .map(cb => cb.value);
+            
+            console.log('Selected Professions:', selectedProfessions);
+            console.log('Selected Skills:', selectedSkills);
+            
+            // Get all freelancer cards
+            const freelancerCards = document.querySelectorAll('.col-md-4.mb-4');
+            
+            freelancerCards.forEach(card => {
+                const professionElements = card.querySelectorAll('.profession');
+                const skillElements = card.querySelectorAll('.skill');
+                
+                const cardProfessions = Array.from(professionElements)
+                    .map(el => el.textContent.trim());
+                const cardSkills = Array.from(skillElements)
+                    .map(el => el.textContent.trim());
+                
+                let showCard = true;
+                
+                // Check professions
+                if (selectedProfessions.length > 0) {
+                    showCard = selectedProfessions.every(profession => 
+                        cardProfessions.some(cardProf => cardProf.includes(profession))
+                    );
+                }
+                
+                // Check skills only if card passed profession filter
+                if (showCard && selectedSkills.length > 0) {
+                    showCard = selectedSkills.every(skill => 
+                        cardSkills.some(cardSkill => cardSkill.includes(skill))
+                    );
+                }
+                
+                card.style.display = showCard ? '' : 'none';
+            });
+        }
+
+        
+       
+    });
+</script>
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-center text-primary">Freelancers</h2>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <form method="GET" id="filterForm" class="form-row align-items-center">
+                <div class="col-md-3 mb-2">
+                    <input type="text" name="search" id="searchInput" placeholder="Search by name or profession..." class="form-control" value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <div class="dropdown-check-list form-control" tabindex="100">
+                        <span class="anchor">Select Professions</span>
+                        <ul class="items">
+                            {% for profession in profession_choices %}
+                            <li>
+                                <label>
+                                    <input type="checkbox" name="profession" value="{{ profession }}" 
+                                           {% if profession in selected_professions %}checked{% endif %}>
+                                    {{ profession }}
+                                </label>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <div class="dropdown-check-list form-control" tabindex="100">
+                        <span class="anchor">Select Skills</span>
+                        <ul class="items">
+                            {% for skill in skill_choices %}
+                            <li>
+                                <label>
+                                    <input type="checkbox" name="skill" value="{{ skill }}" 
+                                           {% if skill in selected_skills %}checked{% endif %}>
+                                    {{ skill }}
+                                </label>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <!-- Change button type to button to prevent form submission -->
+                    <button type="button" id="clearFilters" class="btn btn-secondary">Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for user_data in users %}
+            {% if user_data.registers %}
+                {% for register in user_data.registers %}
+                    {% if user_data.freelancer_profile.is_open_to_work %}
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    {% if register.profile_picture %}
+                                        <img src="{{ register.profile_picture.url }}" alt="User Image" class="profile-img mb-3">
+                                    {% else %}
+                                        <img src="{% static 'img/default-profile.jpg' %}" alt="Default User Image" class="profile-img mb-3">
+                                    {% endif %}
+                                    <h5 class="card-title">{{ register.first_name|default:'' }} {{ register.last_name|default:'' }}</h5>
+                                    <p class="card-text text-muted">
+                                        {% for profession in user_data.professions %}
+                                            <span class="profession">{{ profession }}{% if not forloop.last %}, {% endif %}</span>
+                                        {% empty %}
+                                            No professions listed
+                                        {% endfor %}
+                                    </p>
+                                    <p class="card-text">{{ register.bio_description|default:''|truncatewords:20 }}</p>
+                                    <a href="{% url 'client:freelancer_detail' user_data.user.id %}" class="btn btn-primary">View Details</a>
+                                    <button type="button" class="btn btn-success" onclick="openHireModal('{{ user_data.user.id }}')">Hire</button>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="social-media">
+                                        <a href="{{ register.linkedin }}" class="social-icon"><img src="{% static 'img/linkedin.png' %}" alt="Linkedin"></a>
+                                        <a href="{{ register.instagram }}" class="social-icon"><img src="{% static 'img/instagram.png' %}" alt="Instagram"></a>
+                                        <a href="{{ register.twitter }}" class="social-icon"><img src="{% static 'img/twitter.png' %}" alt="Twitter"></a>
+                                        <a href="{{ user_data.freelancer_profile.portfolio_link }}" class="social-icon"><img src="{% static 'img/web.png' %}" alt="Website"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add this modal HTML at the end of the body -->
+<div class="modal fade" id="hireModal" tabindex="-1" role="dialog" aria-labelledby="hireModalLabel" aria-hidden="true">
+    <div class="modal-dialog custom-modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="hireModalLabel">Hire Freelancer</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="hireForm">
+                    <p>Are you sure you want to hire this freelancer?</p>
+                    <input type="hidden" id="freelancerId" name="user_id" value="">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="jobRole">Job Role</label>
+                                <input type="text" class="form-control" id="jobRole" name="job_role" placeholder="Enter job role" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="jobDescription">Description</label>
+                                <textarea class="form-control" id="jobDescription" name="job_description" rows="3" placeholder="Enter job description" required></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="compensation">Salary per Month</label>
+                                <input type="number" class="form-control" id="compensation" name="compensation" placeholder="Enter salary amount" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="workMode">Work Mode</label>
+                                <select class="form-control" id="workMode" name="work_mode" required>
+                                    <option value="">Select Work Mode</option>
+                                    <option value="Remote">Remote</option>
+                                    <option value="Hybrid">Hybrid</option>
+                                    <option value="On-Site">On-Site</option>
+                                    <option value="Specify Later">Specify Later</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="benefits">Benefits</label>
+                                <textarea class="form-control" id="benefits" name="benefits" rows="3" placeholder="List benefits (e.g., insurance, bonuses)"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="bondPeriod">Minimum Bond Period</label>
+                                <input type="text" class="form-control" id="bondPeriod" name="bond_period" placeholder="E.g., '6 months'" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Is a Contract Needed?</label><br>
+                                <label class="radio-inline">
+                                    <input type="radio" name="contract_needed" value="true" required checked> Yes
+                                </label>
+                                <label class="radio-inline">
+                                    <input type="radio" name="contract_needed" value="false" required > No
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" id="submitJobInvitation">Confirm Hire</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openHireModal(userId) {
+        document.getElementById('freelancerId').value = userId;
+        $('#hireModal').modal('show');
+    }
+
+    $(document).ready(function () {
+        $("#submitJobInvitation").click(function(event) {
+            event.preventDefault();
+            
+            // Collect form data
+            const userId = document.getElementById('freelancerId').value;
+            const jobRole = document.getElementById('jobRole').value;
+            const jobDescription = document.getElementById('jobDescription').value;
+            const compensation = document.getElementById('compensation').value;
+            const workMode = document.getElementById('workMode').value;
+            const benefits = document.getElementById('benefits').value;
+            const bondPeriod = document.getElementById('bondPeriod').value;
+            const contractNeeded = document.querySelector('input[name="contract_needed"]:checked')?.value;
+
+            // Submit the data via AJAX
+            $.ajax({
+                type: 'POST',
+                url: '{% url "client:hire_freelancer" %}',
+                data: {
+                    user_id: userId,
+                    job_role: jobRole,
+                    job_description: jobDescription,
+                    compensation: compensation,
+                    work_mode: workMode,
+                    benefits: benefits,
+                    bond_period: bondPeriod,
+                    contract_needed: contractNeeded,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Invitation sent successfully!',
+                            confirmButtonColor: '#3085d6'
+                        }).then((result) => {
+                            $('#hireModal').modal('hide');
+                            // Clear the form
+                            $('#hireForm')[0].reset();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: response.error,
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                },
+                error: function(xhr, errmsg, err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'An error occurred. Please try again later.',
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    .profile-img {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .social-media {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .social-icon img {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Styles for checkbox dropdowns */
+    .dropdown-check-list {
+        display: inline-block;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .dropdown-check-list .anchor {
+        position: relative;
+        display: block;
+        padding: 5px 30px 5px 10px;
+    }
+
+    .dropdown-check-list .anchor:after {
+        content: "";
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 5px solid #000;
+        position: absolute;
+        right: 10px;
+        top: 45%;
+    }
+
+    .dropdown-check-list .items {
+        padding: 5px;
+        display: none;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+        position: absolute;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .dropdown-check-list .items li {
+        list-style: none;
+        padding: 5px;
+    }
+
+    .dropdown-check-list .items label {
+        display: block;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .dropdown-check-list .items label:hover {
+        background-color: #f8f9fa;
+    }
+
+    .dropdown-check-list.visible .items {
+        display: block;
+    }
+
+    .custom-modal-dialog {
+        max-width: 1200px; /* Adjust the width as needed */
+        width: 100%; /* Ensure it takes full width up to the max */
+    }
+
+    /* Add this CSS to create vertical lines between columns */
+   
+</style>
+
+
+<!-- /^[a-zA-Z0-9]+( [a-zA-Z0-9]+)*$/ -->
+{% endblock %}

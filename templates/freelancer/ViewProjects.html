@@ -1,0 +1,226 @@
+{% extends 'freelancer/base.html' %}
+{% block 'freelancer_content' %}
+{% load static %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const filterTypeSelect = document.getElementById('filter_type');
+    const statusFilter = document.getElementById('statusFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+
+    filterTypeSelect.addEventListener('change', function() {
+        if (this.value === 'status') {
+            statusFilter.style.display = 'block';
+            categoryFilter.style.display = 'none';
+        } else if (this.value === 'category') {
+            statusFilter.style.display = 'none';
+            categoryFilter.style.display = 'block';
+        } else {
+            statusFilter.style.display = 'none';
+            categoryFilter.style.display = 'none';
+        }
+    });
+});
+
+function handleFilterChange() {
+  var filterType = document.getElementById('filter_type').value;
+  document.getElementById('statusFilter').style.display = (filterType === 'status') ? 'block' : 'none';
+  document.getElementById('categoryFilter').style.display = (filterType === 'category') ? 'block' : 'none';
+}
+</script>
+<div class="row" style="background-color:white;padding:10px;border-radius:10px;">
+    <h3 align="center" style="margin:1% auto;color:#ff0057">Projects</h3>
+</div><br><br>
+
+<div class="row justify-content-center">
+  <div class="col-md-4">
+      <form method="GET" id="searchForm" class="form-inline">
+          <input type="text" name="search" id="searchInput" placeholder="Search by title or category..." class="form-control search-input" value="{{ request.GET.search }}">
+      </form>
+  </div>
+  <div class="col-md-8">
+      <form method="GET" id="filterForm" class="form-inline">
+          <select name="filter_type" id="filter_type" class="form-control filter-select" onchange="updateFilters()">
+              <option value="">Choose filter type</option>
+              <option value="status" {% if request.GET.filter_type == "status" %}selected{% endif %}>Status</option>
+              <option value="category" {% if request.GET.filter_type == "category" %}selected{% endif %}>Category</option>
+          </select>
+          <div id="statusFilter" class="filter-section" style="{% if request.GET.filter_type == 'status' %}display:block{% else %}display:none{% endif %}">
+              <select name="status" id="status" class="form-control filter-select">
+                  <option value="">Filter by status</option>
+                  <option value="Open" {% if request.GET.status == "Open" %}selected{% endif %}>Open</option>
+                  <option value="Closed" {% if request.GET.status == "Closed" %}selected{% endif %}>Closed</option>
+              </select>
+          </div>
+          <div id="categoryFilter" class="filter-section" style="{% if request.GET.filter_type == 'category' %}display:block{% else %}display:none{% endif %}">
+              <select name="category" id="category" class="form-control filter-select">
+                  <option value="">Filter by category</option>
+                  {% for cat in categories %}
+                      <option value="{{ cat }}" {% if request.GET.category == cat %}selected{% endif %}>{{ cat }}</option>
+                  {% endfor %}
+              </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Apply Filters</button>
+          <a href="{% url 'freelancer:view_project' %}" class="btn btn-secondary ml-2">Clear Filters</a>
+      </form>
+  </div>
+</div>
+
+<style>
+    .card {
+        margin-top: 10px;
+        height: auto;
+        width: 100%;
+        border-radius: 6px;
+        overflow: hidden;
+        transition: transform 0.3s;
+        font-size: 0.85rem;
+    }
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .card-body {
+        padding: 0.5rem;
+    }
+    .card img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+    }
+    
+    .card-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        padding: 10px;
+        width: 100%;
+    }
+
+    /* Responsive adjustments */
+    @media screen and (max-width: 1200px) {
+        .card-container {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    
+    @media screen and (max-width: 992px) {
+        .card-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media screen and (max-width: 576px) {
+        .card-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .form-inline {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .form-inline .form-control {
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+    .filter-section {
+        margin-right: 10px;
+    }
+    .btn-secondary {
+        background-color: #6c757d;
+        border: none;
+    }
+    .ml-2 {
+        margin-left: 10px;
+    }
+    
+    .card-title {
+        color: red;
+        font-size: 1rem;
+        margin-bottom: 5px;
+        line-height: 1.2;
+    }
+    
+    .project-status {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        color: white;
+        font-size: 0.8rem;
+        background-color: #ff0057;
+    }
+    
+    .card-footer {
+        display: flex;
+        justify-content: center;
+        padding: 6px;
+        background-color: rgba(0,0,0,0.03);
+    }
+    
+    .card-text, .budget, .card p {
+        margin-bottom: 0.3rem;
+        font-size: 0.8rem;
+        line-height: 1.2;
+    }
+    
+    .btn-primary {
+        padding: 0.2rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    
+    .proposal-submitted {
+        display: inline-block;
+        padding: 0.3rem 0.7rem;
+        background-color: #f8f9fa;
+        border: 1px solid #dc3545;
+        border-radius: 4px;
+        color: #dc3545;
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .proposal-submitted:hover {
+        background-color: #dc3545;
+        color: white;
+        text-decoration: none;
+    }
+</style>
+
+<div class="card-container">
+    {% for detail in project_details %}
+    {% if detail.project.project_status != 'Completed' and detail.project.project_status != 'In Progress' %}
+    <div class="card">
+        <img src="{{ detail.client_register.profile_picture.url }}" alt="Client Profile">
+        <div class="card-body">
+            <h5 class="card-title">{{ detail.project.title|default:'' }}</h5>
+            <p class="card-text">{{ detail.project.description|truncatechars:50|default:'' }}</p>
+            <p class="budget"><strong style="color:red;">Budget:</strong> {{ detail.project.budget|default:'' }}</p>
+            <p class="budget"><strong style="color:red;">Category:</strong> {{ detail.project.category|default:'' }}</p>
+            <p><strong style="color:blueviolet;">End Date:</strong> {{ detail.project.end_date|default:'' }}</p> <br>
+
+            {% if detail.has_proposal %}
+                <a href="{% url 'freelancer:single_project_view' detail.project.id %}" class="proposal-submitted">
+                    <i class="fas fa-check-circle"></i> Proposal Submitted
+                </a>
+            {% else %}
+                <a href="{% url 'freelancer:single_project_view' detail.project.id %}" class="btn btn-primary">
+                    View More
+                </a>
+            {% endif %}
+        </div>
+        
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+{% endblock %}
