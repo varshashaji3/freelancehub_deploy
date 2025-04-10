@@ -19,16 +19,16 @@ from django.conf import settings
 from django.contrib.sessions.models import Session
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout 
-from freelancer.views import freelancer_view
-from client.views import client_view
-from administrator.views import admin_view
+
 from urllib.parse import urlparse, parse_qs, urlunparse
 from urllib.parse import urlencode
 from django.http import JsonResponse
 import razorpay
 import json
 from django.views.decorators.csrf import csrf_exempt
-
+from freelancer.views import freelancer_view  # Importing the freelancer_view
+from client.views import client_view
+from administrator.views import admin_view
 
 def index(request):
     
@@ -219,6 +219,7 @@ def login(request):
 
 
 def redirect_based_on_user_type(request, user):
+    
     user.backend = 'django.contrib.auth.backends.ModelBackend'
     
     existing_entry = Register.objects.filter(user_id=user.id).first()

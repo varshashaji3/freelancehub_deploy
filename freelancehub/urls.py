@@ -23,12 +23,10 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('',include('core.urls')),
-    path('freelancer/',include(('freelancer.urls', 'freelancer'), namespace='freelancer')),
-    
-    path('client/',include(('client.urls', 'client'), namespace='client')),
-    path('administrator/',include(('administrator.urls', 'administrator'), namespace='administrator')),
-    
+    path('', include('core.urls')),  # Check core.urls for imports
+    path('freelancer/', include(('freelancer.urls', 'freelancer'), namespace='freelancer')),  # Check freelancer.urls for imports
+    path('client/', include(('client.urls', 'client'), namespace='client')),
+    path('administrator/', include(('administrator.urls', 'administrator'), namespace='administrator')),
     path('accounts/', include('allauth.urls')),
     path('ckeditor/', include('ckeditor_uploader.urls')),
     path('chatbot/', include('chatbot.urls')),  # Include the chatbot app URLs
