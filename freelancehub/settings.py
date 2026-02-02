@@ -133,11 +133,11 @@ WSGI_APPLICATION = 'freelancehub.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'freelancehub_strangergo',
-        'USER': 'freelancehub_strangergo',
-        'PASSWORD': '739cd32a2c6f51df7fce54d52ff39b748c14c6c8',
-        'HOST': 'l9i84.h.filess.io',
-        'PORT': '3305',
+        'NAME': 'FreelanceHub_recordrest',
+        'USER': 'FreelanceHub_recordrest',
+        'PASSWORD': 'b650647b676878be978bdc2dedffce080645b05d',
+        'HOST': '2cwio6.h.filess.io',
+        'PORT': '61000',
         'OPTIONS': {
             'charset': 'utf8mb4',
         },
